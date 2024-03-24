@@ -1,11 +1,15 @@
 "use client"
 import { ChangeEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import Web3 from 'web3';
+import inputBoxAbi from "../../public/input_box.json"
+import axios, { AxiosResponse } from "axios";
 
 const AI = () => {
     const [stepperNumber, setStepperNumber] = useState<number>(1);
     const [nftImageData, setNftImageData] = useState<string>("");
     const [isPopupOpen, setIsPopupOpen] = useState<boolean>(false);
+    const [result, setResult] = useState("")
     const router = useRouter()
 
     const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -18,34 +22,63 @@ const AI = () => {
                 const fileContent = upload.target?.result;
                 console.log('File content:', fileContent);
                 const data = { file: fileContent };
-            
+
             }
         };
+        sendGraphQLRequest()
+        setStepperNumber(2);
     };
-    const startUpload = async (choice:number) => {
-       
-    }
+
     const buyButtonClicked = async () => {
-        const data = {
-            bodyOfImage: nftImageData,
-        };
-        fetch("/api/upload", {
-            method: "POST",
-            body: JSON.stringify(data),
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                console.log("cid when buy button clicked", data.cid);
-                setStepperNumber(3);
-                // Handle the response data
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-                // Handle the error
-            });
+        const web3 = new Web3(new Web3.providers.HttpProvider(process.env.NEXT_PUBLIC_PROVIDER_URL));
+
+        const contract = new web3.eth.Contract(inputBoxAbi as any[], process.env.NEXT_PUBLIC_INPUT_BOX_ADDRESS);
+
+        const functionName = 'addInput';
+        const functionArguments = [process.env.NEXT_PUBLIC_DAPP_ADDRESS, nftImageData];
+        try {
+            const tempResult = await contract.methods[functionName](...functionArguments).call();
+            console.log('Function result:', result);
+        } catch (error) {
+            console.error('Error calling function:', error);
+        }
+        sendGraphQLRequest()
+        setStepperNumber(3)
     }
-    const returnHome = () => {
-        router.push("/");
+
+    async function sendGraphQLRequest() {
+        try {
+            // GraphQL endpoint URL
+            const graphqlEndpoint = process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT;
+
+            // GraphQL query
+            const graphqlQuery = `
+            query{
+                notices{
+                  edges{
+                    node{
+                      payload
+                    }
+                  }
+                }
+              }
+        `;
+
+            // GraphQL request body
+            const requestBody = {
+                query: graphqlQuery
+            };
+
+            // Send POST request to GraphQL endpoint
+            const response: AxiosResponse<any> = await axios.post(graphqlEndpoint, requestBody);
+
+            // Handle response
+            console.log('GraphQL response:', response.data);
+            setResult(response.data)
+        } catch (error) {
+            console.error('Error sending GraphQL request:', error);
+            throw error;
+        }
     }
     const cancelButtonClicked = () => {
         setStepperNumber(1);
@@ -64,7 +97,7 @@ const AI = () => {
                 </li>
                 <li className={`flex ${stepperNumber > 2 ? 'text-blue-600' : ''} md:w-full items-center after:content-[''] after:w-full after:h-1 after:border-b after:border-gray-200 after:border-1 after:hidden sm:after:inline-block after:mx-6 xl:after:mx-10 dark:after:border-gray-700`}>
                     <span className="flex items-center after:content-['/'] sm:after:hidden after:mx-2 after:text-gray-200 dark:after:text-gray-500">
-                        {stepperNumber > 2 && <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                        {stepperNumber >= 2 && <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z" />
                         </svg>}
                         <span className="mr-2">2</span>
@@ -83,8 +116,7 @@ const AI = () => {
                 <>
                     <img src={nftImageData} alt="Base 64 image" className="mb-10" />
                     <div className="flex">
-                        <button type="button" onClick={buyButtonClicked} className="focus:outline-none w-1/2 text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900">Buy</button>
-                        <button type="button" onClick={cancelButtonClicked} className="text-white bg-gray-800 w-1/2 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">Sell</button>
+                        <button type="button" onClick={buyButtonClicked} className="focus:outline-none w-1/2 text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900">Send</button>
                     </div>
                 </>
             }
@@ -102,24 +134,7 @@ const AI = () => {
             }
             {stepperNumber == 3 && !isPopupOpen &&
                 <div>
-                    <button type="button" onClick={() => startUpload(1)} className="focus:outline-none w-full text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900">Transfer NFT to Wallet</button>
-                    <button onClick={() => setIsPopupOpen(true)} type="button" className="focus:outline-none w-full text-white bg-purple-700 hover:bg-purple-900 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900">Send NFT to Friend</button>
-                </div>
-            }
-            {isPopupOpen &&
-                <form className="space-y-6" action="#">
-                    <button onClick={() => startUpload(2)} type="button" className="focus:outline-none w-full text-white bg-purple-700 hover:bg-purple-900 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900">Send NFT to Friend</button>
-                </form>
-            }
-
-            {stepperNumber == 4 &&
-                <div>
-                    <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
-                        <p className="font-bold">Success</p>
-                        <p>Transfer is done.</p>
-                    </div>
-
-                    <button type="button" onClick={returnHome} className="focus:outline-none w-full text-white bg-purple-700 hover:bg-purple-900 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-900">Return Home Page</button>
+                    <p> Your response is {result}</p>
                 </div>
             }
         </div>
