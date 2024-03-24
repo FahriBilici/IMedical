@@ -1,4 +1,4 @@
-# syntax=docker.io/docker/dockerfile:1
+# syntax=docker.io/docker/:1
 FROM --platform=linux/riscv64 cartesi/python:3.10-slim-jammy as base
 
 LABEL io.sunodo.sdk_version=0.2.0
