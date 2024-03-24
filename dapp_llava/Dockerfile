@@ -1,8 +1,8 @@
 # syntax=docker.io/docker/dockerfile:1
 FROM --platform=linux/riscv64 cartesi/python:3.10-slim-jammy as base
 
-LABEL io.sunodo.sdk_version="0.2.0"
-LABEL io.cartesi.rollups.ram_size="8Gi"
+LABEL io.sunodo.sdk_version=0.2.0
+LABEL io.cartesi.rollups.ram_size=8Gi
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -41,7 +41,7 @@ ENV CMAKE_ROOT=/usr/local/share/cmake-3.21
 
 ENV PATH="/usr/local/bin:${PATH}"
 
-COPY ./requirements.txt /opt/cartesi/dapp/
+COPY ./requirements.txt .
 
 RUN pip install --upgrade pip && \
     pip install --find-links https://prototyp3-dev.github.io/pip-wheels-riscv/wheels/ -r requirements.txt --no-cache-dir
@@ -49,7 +49,8 @@ RUN pip install --upgrade pip && \
 # Copy the rest of the application
 #COPY ./mmproj-model-f16.gguf /opt/cartesi/dapp/
 #COPY ./ggml-model-q4_k.gguf /opt/cartesi/dapp/
-COPY ./dapp.py /opt/cartesi/dapp/
+
+COPY ./dapp.py .
 
 ENV PATH="/opt/cartesi/bin:${PATH}"
 ENV ROLLUP_HTTP_SERVER_URL="http://127.0.0.1:5004"
