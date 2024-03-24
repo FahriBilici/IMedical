@@ -47,8 +47,8 @@ RUN pip install --upgrade pip && \
     pip install --find-links https://prototyp3-dev.github.io/pip-wheels-riscv/wheels/ -r requirements.txt --no-cache-dir
 
 # Copy the rest of the application
-#COPY ./mmproj-model-f16.gguf /opt/cartesi/dapp/
-#COPY ./ggml-model-q4_k.gguf /opt/cartesi/dapp/
+COPY ./mmproj-model-f16.gguf /opt/cartesi/dapp/
+COPY ./ggml-model-q4_k.gguf /opt/cartesi/dapp/
 
 COPY ./dapp.py .
 

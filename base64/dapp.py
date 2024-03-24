@@ -5,7 +5,9 @@ import base64
 logging.basicConfig(level="INFO")
 logger = logging.getLogger(__name__)
 
-rollup_server = environ["ROLLUP_HTTP_SERVER_URL"]
+#rollup_server = environ["ROLLUP_HTTP_SERVER_URL"]
+rollup_server = "http://localhost:8080/host-runner"
+
 logger.info(f"HTTP rollup_server url is {rollup_server}")
 
 #0x70ac08179605AF2D9e75782b8DEcDD3c22aA4D0C
@@ -18,7 +20,7 @@ def handle_advance(data):
     logger.info(f"Received advance request data {data}")
     data['payload'] = bytes.fromhex(data['payload'][2:]).decode('utf-8')
     image = read_base64_file(data['payload'])
-
+    
     return "accept"
 
 
